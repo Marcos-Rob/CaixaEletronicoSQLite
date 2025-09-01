@@ -96,12 +96,11 @@
                 // Cria a conta e salva no banco de dados.
                 var novaConta = new Conta(titular);
                 _contaRepository.CriarConta(novaConta);
-                Console.WriteLine("Conta criada com sucesso!");
 
                 // Busca a conta recém-criada para obter o número gerado.
                 var contaCriada = _contaRepository.BuscarUltimaContaPorTitular(titular);
 
-                Console.WriteLine($"\n Conta criada com sucesso!");
+                Console.WriteLine($"\nConta criada com sucesso!");
                 Console.WriteLine($"Número da conta: {contaCriada.NumeroDaConta}");
                 Console.WriteLine($"Titular: {contaCriada.TitularDaConta}");
                 Console.WriteLine($"Saldo inicial: R$ {contaCriada.SaldoDaConta:0.00}");
