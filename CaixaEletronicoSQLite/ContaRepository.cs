@@ -27,43 +27,35 @@ namespace CaixaEletronicoSQLite
                 conn.Open();
                 string sql = "INSERT INTO Contas (TitularDaConta, SaldoDaConta) VALUES (@titular, @saldo)";
 
-                using (var cmd = new SQLiteCommand(sql, conn))
-                {
-                    // Parametriza a query para evitar SQL Injection
-                    cmd.Parameters.AddWithValue("@titular", conta.TitularDaConta);
-                    cmd.Parameters.AddWithValue("@saldo", conta.SaldoDaConta);
-                    cmd.ExecuteNonQuery();
-                }
+                using var cmd = new SQLiteCommand(sql, conn);
+                // Parametriza a query para evitar SQL Injection
+                cmd.Parameters.AddWithValue("@titular", conta.TitularDaConta);
+                cmd.Parameters.AddWithValue("@saldo", conta.SaldoDaConta);
+                cmd.ExecuteNonQuery();
             }
         }
 
         /// <summary>
         /// Busca uma conta pelo número único.
         /// </summary>
-        public Conta BuscarContaPorNumero(int numeroConta)
+        public Conta? BuscarContaPorNumero(int numeroConta)
         {
-            using (var conn = new SQLiteConnection(_connectionString))
+            using var conn = new SQLiteConnection(_connectionString);
+            conn.Open();
+            string sql = "SELECT * FROM Contas WHERE NumeroDaConta = @numero";
+
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@numero", numeroConta);
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
             {
-                conn.Open();
-                string sql = "SELECT * FROM Contas WHERE NumeroDaConta = @numero";
-
-                using (var cmd = new SQLiteCommand(sql, conn))
+                return new Conta
                 {
-                    cmd.Parameters.AddWithValue("@numero", numeroConta);
-
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            return new Conta
-                            {
-                                NumeroDaConta = Convert.ToInt32(reader["NumeroDaConta"]),
-                                TitularDaConta = reader["TitularDaConta"].ToString(),
-                                SaldoDaConta = Convert.ToDecimal(reader["SaldoDaConta"])
-                            };
-                        }
-                    }
-                }
+                    NumeroDaConta = Convert.ToInt32(reader["NumeroDaConta"]),
+                    TitularDaConta = reader["TitularDaConta"].ToString(),
+                    SaldoDaConta = Convert.ToDecimal(reader["SaldoDaConta"])
+                };
             }
             return null;
         }
@@ -73,17 +65,15 @@ namespace CaixaEletronicoSQLite
         /// </summary>
         public void AtualizarSaldo(int numeroConta, decimal novoSaldo)
         {
-            using (var conn = new SQLiteConnection(_connectionString))
-            {
-                conn.Open();
-                string sql = "UPDATE Contas SET SaldoDaConta = @saldo WHERE NumeroDaConta = @numero";
+            using var conn = new SQLiteConnection(_connectionString);
+            conn.Open();
+            string sql = "UPDATE Contas SET SaldoDaConta = @saldo WHERE NumeroDaConta = @numero";
 
-                using (var cmd = new SQLiteCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@saldo", novoSaldo);
-                    cmd.Parameters.AddWithValue("@numero", numeroConta);
-                    cmd.ExecuteNonQuery();
-                }
+            using (var cmd = new SQLiteCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@saldo", novoSaldo);
+                cmd.Parameters.AddWithValue("@numero", numeroConta);
+                cmd.ExecuteNonQuery();
             }
         }
 
@@ -92,47 +82,39 @@ namespace CaixaEletronicoSQLite
         /// </summary>
         public bool ContaExiste(int numeroConta)
         {
-            using (var conn = new SQLiteConnection(_connectionString))
-            {
-                conn.Open();
-                string sql = "SELECT COUNT(1) FROM Contas WHERE NumeroDaConta = @numero";
+            using var conn = new SQLiteConnection(_connectionString);
+            conn.Open();
+            string sql = "SELECT COUNT(1) FROM Contas WHERE NumeroDaConta = @numero";
 
-                using (var cmd = new SQLiteCommand(sql, conn))
-                {
-                    cmd.Parameters.AddWithValue("@numero", numeroConta);
-                    int count = Convert.ToInt32(cmd.ExecuteScalar());
-                    return count > 0;
-                }
+            using (var cmd = new SQLiteCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@numero", numeroConta);
+                int count = Convert.ToInt32(cmd.ExecuteScalar());
+                return count > 0;
             }
         }
 
         /// <summary>
         /// Busca a última conta criada para um titular específico.
         /// </summary>
-        public Conta BuscarUltimaContaPorTitular(string titular)
+        public Conta? BuscarUltimaContaPorTitular(string titular)
         {
-            using (var conn = new SQLiteConnection(_connectionString))
+            using var conn = new SQLiteConnection(_connectionString);
+            conn.Open();
+            string sql = "SELECT * FROM Contas WHERE TitularDaConta = @titular ORDER BY NumeroDaConta DESC LIMIT 1";
+
+            using var cmd = new SQLiteCommand(sql, conn);
+            cmd.Parameters.AddWithValue("@titular", titular);
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
             {
-                conn.Open();
-                string sql = "SELECT * FROM Contas WHERE TitularDaConta = @titular ORDER BY NumeroDaConta DESC LIMIT 1";
-
-                using (var cmd = new SQLiteCommand(sql, conn))
+                return new Conta
                 {
-                    cmd.Parameters.AddWithValue("@titular", titular);
-
-                    using (var reader = cmd.ExecuteReader())
-                    {
-                        if (reader.Read())
-                        {
-                            return new Conta
-                            {
-                                NumeroDaConta = Convert.ToInt32(reader["NumeroDaConta"]),
-                                TitularDaConta = reader["TitularDaConta"].ToString(),
-                                SaldoDaConta = Convert.ToDecimal(reader["SaldoDaConta"])
-                            };
-                        }
-                    }
-                }
+                    NumeroDaConta = Convert.ToInt32(reader["NumeroDaConta"]),
+                    TitularDaConta = reader["TitularDaConta"].ToString(),
+                    SaldoDaConta = Convert.ToDecimal(reader["SaldoDaConta"])
+                };
             }
             return null;
         }
