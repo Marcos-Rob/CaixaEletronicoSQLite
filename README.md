@@ -66,4 +66,4 @@ Sistema de caixa eletrônico desenvolvido em C# (.NET 8.0) com persistência em 
 
 ## 📄 Licença
 
-Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está licenciado sob a Licença MIT. Veja o arquivo [LICENSE](https://github.com/Marcos-Rob/CaixaEletronicoSQLite?tab=MIT-1-ov-file#readme) para mais detalhes.
