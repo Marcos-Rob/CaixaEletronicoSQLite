@@ -59,9 +59,9 @@ Sistema de caixa eletrônico desenvolvido em C# (.NET 8.0) com persistência em 
 ## 🤝 Contribuindo
 
 1. Faça um fork do projeto
-2. Crie uma branch para sua feature ```bash (git checkout -b feature/nova-funcionalidade)```
-3. Faça commit das suas alterações ```bash (git commit -m 'Adiciona nova funcionalidade')```
-4. Faça push para a branch ```bash (git push origin feature/nova-funcionalidade)```
+2. Crie uma branch para sua feature ```git checkout -b feature/nova-funcionalidade```
+3. Faça commit das suas alterações ```git commit -m 'Adiciona nova funcionalidade'```
+4. Faça push para a branch ```git push origin feature/nova-funcionalidade```
 5. Abra um Pull Request
 
 ## 📄 Licença
