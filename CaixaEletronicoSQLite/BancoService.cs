@@ -1,6 +1,4 @@
-﻿using System.Data.SQLite;
-
-namespace CaixaEletronicoSQLite
+﻿namespace CaixaEletronicoSQLite
 {
     /// <summary>
     /// Classe de serviço que contém as regras de negócio do sistema bancário
@@ -52,11 +50,7 @@ namespace CaixaEletronicoSQLite
         public void Depositar(int numeroConta, decimal valor)
         {
             ValidarValorPositivo(valor);
-            var conta = BuscarContaValida(numeroConta);
-
-            decimal novoSaldo = conta.SaldoDaConta + valor;
-            _contaRepository.AtualizarSaldo(numeroConta, novoSaldo);
-            _transacaoRepository.RegistrarTransacao("DEPOSITO", valor, null, numeroConta);
+            AtualizarSaldoComTransacao(numeroConta, valor, "DEPOSITO", null, numeroConta);
         }
 
         /// <summary>
@@ -67,10 +61,7 @@ namespace CaixaEletronicoSQLite
             ValidarValorPositivo(valor);
             var conta = BuscarContaValida(numeroConta);
             ValidarSaldoSuficiente(conta, valor);
-
-            decimal novoSaldo = conta.SaldoDaConta - valor;
-            _contaRepository.AtualizarSaldo(numeroConta, novoSaldo);
-            _transacaoRepository.RegistrarTransacao("SAQUE", valor, numeroConta, null);
+            AtualizarSaldoComTransacao(numeroConta, valor, "SAQUE", numeroConta, null);
         }
 
         /// <summary>
@@ -79,22 +70,7 @@ namespace CaixaEletronicoSQLite
         public void Transferir(int contaOrigem, int contaDestino, decimal valor)
         {
             ValidarValorPositivo(valor);
-
-            var origem = BuscarContaValida(contaOrigem);
-            var destino = BuscarContaValida(contaDestino);
-
-            ValidarSaldoSuficiente(origem, valor);
-
-            // Debita da conta origem
-            decimal novoSaldoOrigem = origem.SaldoDaConta - valor;
-            _contaRepository.AtualizarSaldo(contaOrigem, novoSaldoOrigem);
-
-            // Credita na conta destino
-            decimal novoSaldoDestino = destino.SaldoDaConta + valor;
-            _contaRepository.AtualizarSaldo(contaDestino, novoSaldoDestino);
-
-            // Registra a transação
-            _transacaoRepository.RegistrarTransacao("TRANSFERENCIA", valor, contaOrigem, contaDestino);
+            ProcessarTransferencia(contaOrigem, contaDestino, valor);
         }
 
         /// <summary>
@@ -123,6 +99,46 @@ namespace CaixaEletronicoSQLite
         public List<Conta> ListarTodasContas()
         {
             return _contaRepository.BuscarTodasContas();
+        }
+
+        /// <summary>
+        /// Método interno para atualizar saldo com registro de transação
+        /// </summary>
+        private void AtualizarSaldoComTransacao(int numeroConta, decimal valor, string tipoTransacao, int? contaOrigem, int? contaDestino)
+        {
+            var conta = BuscarContaValida(numeroConta);
+
+            decimal novoSaldo = tipoTransacao switch
+            {
+                "DEPOSITO" => conta.SaldoDaConta + valor,
+                "SAQUE" => conta.SaldoDaConta - valor,
+                _ => throw new ArgumentException("Tipo de transação inválido")
+            };
+
+            _contaRepository.AtualizarSaldo(numeroConta, novoSaldo);
+            _transacaoRepository.RegistrarTransacao(tipoTransacao, valor, contaOrigem, contaDestino);
+        }
+
+        /// <summary>
+        /// Método interno para processar transferência entre contas
+        /// </summary>
+        private void ProcessarTransferencia(int contaOrigem, int contaDestino, decimal valor)
+        {
+            var origem = BuscarContaValida(contaOrigem);
+            var destino = BuscarContaValida(contaDestino);
+
+            ValidarSaldoSuficiente(origem, valor);
+
+            // Debita da conta origem
+            decimal novoSaldoOrigem = origem.SaldoDaConta - valor;
+            _contaRepository.AtualizarSaldo(contaOrigem, novoSaldoOrigem);
+
+            // Credita na conta destino
+            decimal novoSaldoDestino = destino.SaldoDaConta + valor;
+            _contaRepository.AtualizarSaldo(contaDestino, novoSaldoDestino);
+
+            // Registra a transação
+            _transacaoRepository.RegistrarTransacao("TRANSFERENCIA", valor, contaOrigem, contaDestino);
         }
 
         /// <summary>
