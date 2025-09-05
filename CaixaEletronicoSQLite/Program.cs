@@ -1,38 +1,31 @@
 ﻿namespace CaixaEletronicoSQLite
 {
     /// <summary>
-    /// Classe principal do programa que simula um caixa eletrônico com 
-    /// funcionalidades de criação de conta, listagem das contas, consulta de saldo,
-    /// consulta de histórico de transações, saque, depósito e transferência.
+    /// Classe principal do programa que simula um caixa eletrônico
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Repositórios estáticos e somente leitura para acesso aos dados 
-        /// de contas e transações no banco de dados.
+        /// Serviço bancário com as regras de negócio
         /// </summary>
-        private static readonly ContaRepository _contaRepository = new();
-        private static readonly TransacaoRepository _transacaoRepository = new();
+        private static readonly BancoService _bancoService = new();
 
         /// <summary>
         /// Método auxiliar para buscar uma conta pelo número com validação
         /// </summary>
-        /// <param name="mensagem">Mensagem personalizada para exibir ao usuário</param>
-        /// <returns>Objeto Conta se encontrado, null caso contrário</returns>
         private static Conta? BuscarContaComValidacao(string mensagem = "Digite o número da conta: ")
         {
             Console.Write(mensagem);
 
             if (int.TryParse(Console.ReadLine(), out int numeroConta))
             {
-                var conta = _contaRepository.BuscarContaPorNumero(numeroConta);
-                if (conta != null)
+                try
                 {
-                    return conta;
+                    return _bancoService.BuscarConta(numeroConta);
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Conta não encontrada!");
+                    Console.WriteLine($"Erro: {ex.Message}");
                 }
             }
             else
@@ -46,22 +39,22 @@
         }
 
         /// <summary>
-        /// Método principal que inicia o programa.
+        /// Método principal que inicia o programa
         /// </summary>
         static void Main()
         {
-            // Inicializa o banco de dados e cria as tabelas se não existirem.
+            // Inicializa o banco de dados e cria as tabelas se não existirem
             var databaseContext = new DatabaseContext();
             Console.WriteLine("Banco de dados inicializado com sucesso!");
 
             bool sendoUsado = true;
 
-            //Loop principal do menu do caixa eletrônico.
+            // Loop principal do menu do caixa eletrônico
             while (sendoUsado)
             {
                 Console.Clear();
                 Console.WriteLine(
-@"----- Banco Marcos -----
+    @"----- Banco Marcos -----
 
     1 - Criar Conta
     2 - Listar Todas as Contas
@@ -76,7 +69,7 @@
 
                 string escolha = Console.ReadLine();
 
-                // Processa a escolha do usuário e chama o método correspondente.
+                // Processa a escolha do usuário
                 switch (escolha)
                 {
                     case "1":
@@ -113,7 +106,7 @@
         }
 
         /// <summary>
-        /// Cria uma nova conta solicitando o nome do titular ao usuário.
+        /// Cria uma nova conta solicitando o nome do titular ao usuário
         /// </summary>
         static void CriarConta()
         {
@@ -124,12 +117,8 @@
 
             try
             {
-                // Cria a conta e salva no banco de dados.
-                var novaConta = new Conta(titular);
-                _contaRepository.CriarConta(novaConta);
-
-                // Busca a conta recém-criada para obter o número gerado.
-                var contaCriada = _contaRepository.BuscarUltimaContaPorTitular(titular);
+                _bancoService.CriarConta(titular);
+                var contaCriada = _bancoService.BuscarUltimaContaPorTitular(titular);
 
                 Console.WriteLine($"\nConta criada com sucesso!");
                 Console.WriteLine($"Número da conta: {contaCriada.NumeroDaConta}");
@@ -138,7 +127,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Erro ao criar conta: {ex.Message}");
+                Console.WriteLine($"Erro: {ex.Message}");
             }
 
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu inicial.");
@@ -146,7 +135,7 @@
         }
 
         /// <summary>
-        /// Consulta o saldo de uma conta existente solicitando o número da conta ao usuário.
+        /// Consulta o saldo de uma conta existente
         /// </summary>
         static void ConsultarSaldo()
         {
@@ -165,7 +154,7 @@
         }
 
         /// <summary>
-        /// Realiza um depósito em uma conta existente solicitando o número da conta e o valor ao usuário.
+        /// Realiza um depósito em uma conta existente
         /// </summary>
         static void Depositar()
         {
@@ -176,14 +165,20 @@
             if (conta == null) return;
 
             Console.Write("Digite o valor do depósito: ");
-            if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
+            if (decimal.TryParse(Console.ReadLine(), out decimal valor))
             {
-                decimal novoSaldo = conta.SaldoDaConta + valor;
-                _contaRepository.AtualizarSaldo(conta.NumeroDaConta, novoSaldo);
-                _transacaoRepository.RegistrarTransacao("DEPOSITO", valor, contaOrigem: null, contaDestino: conta.NumeroDaConta);
+                try
+                {
+                    _bancoService.Depositar(conta.NumeroDaConta, valor);
+                    var contaAtualizada = _bancoService.BuscarConta(conta.NumeroDaConta);
 
-                Console.WriteLine($"Depósito de R$ {valor:0.00} realizado com sucesso!");
-                Console.WriteLine($"Novo saldo: R$ {novoSaldo:0.00}");
+                    Console.WriteLine($"Depósito de R$ {valor:0.00} realizado com sucesso!");
+                    Console.WriteLine($"Novo saldo: R$ {contaAtualizada.SaldoDaConta:0.00}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Erro: {ex.Message}");
+                }
             }
             else
             {
@@ -195,7 +190,7 @@
         }
 
         /// <summary>
-        /// Realiza um saque em uma conta existente solicitando o número da conta e o valor ao usuário.
+        /// Realiza um saque em uma conta existente
         /// </summary>
         static void Sacar()
         {
@@ -206,20 +201,19 @@
             if (conta == null) return;
 
             Console.Write("Digite o valor do saque: ");
-            if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
+            if (decimal.TryParse(Console.ReadLine(), out decimal valor))
             {
-                if (valor <= conta.SaldoDaConta)
+                try
                 {
-                    decimal novoSaldo = conta.SaldoDaConta - valor;
-                    _contaRepository.AtualizarSaldo(conta.NumeroDaConta, novoSaldo);
-                    _transacaoRepository.RegistrarTransacao("SAQUE", valor, contaOrigem: conta.NumeroDaConta, contaDestino: null);
+                    _bancoService.Sacar(conta.NumeroDaConta, valor);
+                    var contaAtualizada = _bancoService.BuscarConta(conta.NumeroDaConta);
 
                     Console.WriteLine($"Saque de R$ {valor:0.00} realizado com sucesso!");
-                    Console.WriteLine($"Novo saldo: R$ {novoSaldo:0.00}");
+                    Console.WriteLine($"Novo saldo: R$ {contaAtualizada.SaldoDaConta:0.00}");
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Saldo insuficiente!");
+                    Console.WriteLine($"Erro: {ex.Message}");
                 }
             }
             else
@@ -232,7 +226,7 @@
         }
 
         /// <summary>
-        /// Realiza transferência entre duas contas existentes solicitando os números das contas e o valor ao usuário.
+        /// Realiza transferência entre duas contas existentes
         /// </summary>
         static void Transferir()
         {
@@ -240,35 +234,27 @@
             Console.WriteLine("--- Transferência ---");
 
             // Busca conta origem
-            var contaOrigemObj = BuscarContaComValidacao("Digite o número da conta de origem: ");
-            if (contaOrigemObj == null) return;
+            var contaOrigem = BuscarContaComValidacao("Digite o número da conta de origem: ");
+            if (contaOrigem == null) return;
 
             // Busca conta destino
-            var contaDestinoObj = BuscarContaComValidacao("Digite o número da conta de destino: ");
-            if (contaDestinoObj == null) return;
+            var contaDestino = BuscarContaComValidacao("Digite o número da conta de destino: ");
+            if (contaDestino == null) return;
 
             Console.Write("Digite o valor da transferência: ");
-            if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
+            if (decimal.TryParse(Console.ReadLine(), out decimal valor))
             {
-                if (valor <= contaOrigemObj.SaldoDaConta)
+                try
                 {
-                    // Debita da conta origem
-                    decimal novoSaldoOrigem = contaOrigemObj.SaldoDaConta - valor;
-                    _contaRepository.AtualizarSaldo(contaOrigemObj.NumeroDaConta, novoSaldoOrigem);
-
-                    // Credita na conta destino
-                    decimal novoSaldoDestino = contaDestinoObj.SaldoDaConta + valor;
-                    _contaRepository.AtualizarSaldo(contaDestinoObj.NumeroDaConta, novoSaldoDestino);
-
-                    // Registra a transação
-                    _transacaoRepository.RegistrarTransacao("TRANSFERENCIA", valor, contaOrigemObj.NumeroDaConta, contaDestinoObj.NumeroDaConta);
+                    _bancoService.Transferir(contaOrigem.NumeroDaConta, contaDestino.NumeroDaConta, valor);
+                    var contaOrigemAtualizada = _bancoService.BuscarConta(contaOrigem.NumeroDaConta);
 
                     Console.WriteLine($"Transferência de R$ {valor:0.00} realizada com sucesso!");
-                    Console.WriteLine($"Novo saldo da conta {contaOrigemObj.NumeroDaConta}: R$ {novoSaldoOrigem:0.00}");
+                    Console.WriteLine($"Novo saldo da conta {contaOrigem.NumeroDaConta}: R$ {contaOrigemAtualizada.SaldoDaConta:0.00}");
                 }
-                else
+                catch (Exception ex)
                 {
-                    Console.WriteLine("Saldo insuficiente!");
+                    Console.WriteLine($"Erro: {ex.Message}");
                 }
             }
             else
@@ -281,7 +267,7 @@
         }
 
         /// <summary>
-        /// Consulta o histórico de transações de uma conta existente solicitando o número da conta ao usuário.
+        /// Consulta o histórico de transações de uma conta existente
         /// </summary>
         static void ConsultarHistorico()
         {
@@ -291,30 +277,37 @@
             var conta = BuscarContaComValidacao();
             if (conta == null) return;
 
-            var transacoes = _transacaoRepository.BuscarTransacoesPorConta(conta.NumeroDaConta);
-
-            Console.WriteLine($"\nHistórico da Conta {conta.NumeroDaConta}:");
-            Console.WriteLine("Data/Hora | Tipo | Valor | Conta Relacionada");
-            Console.WriteLine(new string('-', 50));
-
-            foreach (var transacao in transacoes)
+            try
             {
-                string contaRelacionada = transacao.Tipo switch
+                var transacoes = _bancoService.ConsultarHistorico(conta.NumeroDaConta);
+
+                Console.WriteLine($"\nHistórico da Conta {conta.NumeroDaConta}:");
+                Console.WriteLine("Data/Hora | Tipo | Valor | Conta Relacionada");
+                Console.WriteLine(new string('-', 50));
+
+                foreach (var transacao in transacoes)
                 {
-                    "DEPOSITO" => "Entrada",
-                    "SAQUE" => "Saída",
-                    "TRANSFERENCIA" => transacao.ContaOrigem == conta.NumeroDaConta ?
-                                      $"Para conta {transacao.ContaDestino}" :
-                                      $"Da conta {transacao.ContaOrigem}",
-                    _ => ""
-                };
+                    string contaRelacionada = transacao.Tipo switch
+                    {
+                        "DEPOSITO" => "Entrada",
+                        "SAQUE" => "Saída",
+                        "TRANSFERENCIA" => transacao.ContaOrigem == conta.NumeroDaConta ?
+                                          $"Para conta {transacao.ContaDestino}" :
+                                          $"Da conta {transacao.ContaOrigem}",
+                        _ => ""
+                    };
 
-                Console.WriteLine($"{transacao.DataHora:dd/MM/yy HH:mm} | {transacao.Tipo} | R$ {transacao.Valor:0.00} | {contaRelacionada}");
+                    Console.WriteLine($"{transacao.DataHora:dd/MM/yy HH:mm} | {transacao.Tipo} | R$ {transacao.Valor:0.00} | {contaRelacionada}");
+                }
+
+                if (transacoes.Count == 0)
+                {
+                    Console.WriteLine("Nenhuma transação encontrada.");
+                }
             }
-
-            if (transacoes.Count == 0)
+            catch (Exception ex)
             {
-                Console.WriteLine("Nenhuma transação encontrada.");
+                Console.WriteLine($"Erro: {ex.Message}");
             }
 
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu inicial.");
@@ -322,33 +315,39 @@
         }
 
         /// <summary>
-        /// Lista todas as contas cadastradas no sistema e seus respectivos números.
+        /// Lista todas as contas cadastradas no sistema
         /// </summary>
         static void ListarContas()
         {
             Console.Clear();
             Console.WriteLine("--- Lista de Todas as Contas ---");
 
-            var contas = _contaRepository.BuscarTodasContas();
-
-            if (contas.Count > 0)
+            try
             {
-                // Exibe os números e contas em formato de tabela.
-                Console.WriteLine("┌──────────┬──────────────────────────────┐");
-                Console.WriteLine("│ Número   │ Titular                      │");
-                Console.WriteLine("├──────────┼──────────────────────────────┤");
+                var contas = _bancoService.ListarTodasContas();
 
-                foreach (var conta in contas)
+                if (contas.Count > 0)
                 {
-                    Console.WriteLine($"│ {conta.NumeroDaConta,-8} │ {conta.TitularDaConta,-28} │");
-                }
+                    Console.WriteLine("┌──────────┬──────────────────────────────┐");
+                    Console.WriteLine("│ Número   │ Titular                      │");
+                    Console.WriteLine("├──────────┼──────────────────────────────┤");
 
-                Console.WriteLine("└──────────┴──────────────────────────────┘");
-                Console.WriteLine($"Total de contas cadastradas: {contas.Count}");
+                    foreach (var conta in contas)
+                    {
+                        Console.WriteLine($"│ {conta.NumeroDaConta,-8} │ {conta.TitularDaConta,-28} │");
+                    }
+
+                    Console.WriteLine("└──────────┴──────────────────────────────┘");
+                    Console.WriteLine($"Total de contas cadastradas: {contas.Count}");
+                }
+                else
+                {
+                    Console.WriteLine("Nenhuma conta cadastrada no sistema.");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Console.WriteLine("Nenhuma conta cadastrada no sistema.");
+                Console.WriteLine($"Erro: {ex.Message}");
             }
 
             Console.WriteLine("\nPressione qualquer tecla para continuar...");
