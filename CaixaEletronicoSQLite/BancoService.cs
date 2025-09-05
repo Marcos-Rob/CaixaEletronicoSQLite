@@ -1,21 +1,15 @@
 ﻿namespace CaixaEletronicoSQLite
 {
     /// <summary>
-    /// Classe de serviço que contém as regras de negócio do sistema bancário
+    /// Classe de serviço que contém as regras de negócio do sistema bancário.
     /// </summary>
-    public class BancoService
+    public class BancoService(string connectionString = "Data Source=banco.db;Version=3;")
     {
-        private readonly ContaRepository _contaRepository;
-        private readonly TransacaoRepository _transacaoRepository;
-
-        public BancoService(string connectionString = "Data Source=banco.db;Version=3;")
-        {
-            _contaRepository = new ContaRepository(connectionString);
-            _transacaoRepository = new TransacaoRepository(connectionString);
-        }
+        private readonly ContaRepository _contaRepository = new(connectionString);
+        private readonly TransacaoRepository _transacaoRepository = new(connectionString);
 
         /// <summary>
-        /// Cria uma nova conta bancária
+        /// Cria uma nova conta bancária.
         /// </summary>
         public void CriarConta(string titular)
         {
@@ -27,7 +21,7 @@
         }
 
         /// <summary>
-        /// Busca a última conta criada por um titular
+        /// Busca a última conta criada por um titular.
         /// </summary>
         public Conta BuscarUltimaContaPorTitular(string titular)
         {
@@ -36,7 +30,7 @@
         }
 
         /// <summary>
-        /// Busca uma conta completa pelo número
+        /// Busca uma conta completa pelo número.
         /// </summary>
         public Conta BuscarConta(int numeroConta)
         {
@@ -45,7 +39,7 @@
         }
 
         /// <summary>
-        /// Realiza um depósito em uma conta
+        /// Realiza um depósito em uma conta.
         /// </summary>
         public void Depositar(int numeroConta, decimal valor)
         {
@@ -54,7 +48,7 @@
         }
 
         /// <summary>
-        /// Realiza um saque em uma conta
+        /// Realiza um saque em uma conta.
         /// </summary>
         public void Sacar(int numeroConta, decimal valor)
         {
@@ -65,7 +59,7 @@
         }
 
         /// <summary>
-        /// Realiza uma transferência entre contas
+        /// Realiza uma transferência entre contas.
         /// </summary>
         public void Transferir(int contaOrigem, int contaDestino, decimal valor)
         {
@@ -74,7 +68,7 @@
         }
 
         /// <summary>
-        /// Consulta o saldo de uma conta
+        /// Consulta o saldo de uma conta.
         /// </summary>
         public decimal ConsultarSaldo(int numeroConta)
         {
@@ -83,7 +77,7 @@
         }
 
         /// <summary>
-        /// Busca o histórico de transações de uma conta
+        /// Busca o histórico de transações de uma conta.
         /// </summary>
         public List<Transacao> ConsultarHistorico(int numeroConta)
         {
@@ -94,7 +88,7 @@
         }
 
         /// <summary>
-        /// Lista todas as contas do sistema
+        /// Lista todas as contas do sistema.
         /// </summary>
         public List<Conta> ListarTodasContas()
         {
@@ -102,7 +96,7 @@
         }
 
         /// <summary>
-        /// Método interno para atualizar saldo com registro de transação
+        /// Método interno para atualizar saldo com registro de transação.
         /// </summary>
         private void AtualizarSaldoComTransacao(int numeroConta, decimal valor, string tipoTransacao, int? contaOrigem, int? contaDestino)
         {
@@ -120,7 +114,7 @@
         }
 
         /// <summary>
-        /// Método interno para processar transferência entre contas
+        /// Método interno para processar transferência entre contas.
         /// </summary>
         private void ProcessarTransferencia(int contaOrigem, int contaDestino, decimal valor)
         {
@@ -142,7 +136,7 @@
         }
 
         /// <summary>
-        /// Busca uma conta válida pelo número
+        /// Busca uma conta válida pelo número.
         /// </summary>
         private Conta BuscarContaValida(int numeroConta)
         {
@@ -151,18 +145,18 @@
         }
 
         /// <summary>
-        /// Valida se o valor é positivo
+        /// Valida se o valor é positivo.
         /// </summary>
-        private void ValidarValorPositivo(decimal valor)
+        private static void ValidarValorPositivo(decimal valor)
         {
             if (valor <= 0)
                 throw new ArgumentException("O valor deve ser maior que zero.");
         }
 
         /// <summary>
-        /// Valida se há saldo suficiente para a operação
+        /// Valida se há saldo suficiente para a operação.
         /// </summary>
-        private void ValidarSaldoSuficiente(Conta conta, decimal valor)
+        private static void ValidarSaldoSuficiente(Conta conta, decimal valor)
         {
             if (valor > conta.SaldoDaConta)
                 throw new InvalidOperationException("Saldo insuficiente para realizar a operação.");

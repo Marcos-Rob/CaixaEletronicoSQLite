@@ -1,17 +1,17 @@
 ﻿namespace CaixaEletronicoSQLite
 {
     /// <summary>
-    /// Classe principal do programa que simula um caixa eletrônico
+    /// Classe principal do programa que simula um caixa eletrônico.
     /// </summary>
     class Program
     {
         /// <summary>
-        /// Serviço bancário com as regras de negócio
+        /// Serviço bancário com as regras de negócio.
         /// </summary>
         private static readonly BancoService _bancoService = new();
 
         /// <summary>
-        /// Método auxiliar para buscar uma conta pelo número com validação
+        /// Método auxiliar para buscar uma conta pelo número com validação.
         /// </summary>
         private static Conta? BuscarContaComValidacao(string mensagem = "Digite o número da conta: ")
         {
@@ -39,17 +39,17 @@
         }
 
         /// <summary>
-        /// Método principal que inicia o programa
+        /// Método principal que inicia o programa.
         /// </summary>
         static void Main()
         {
-            // Inicializa o banco de dados e cria as tabelas se não existirem
+            // Inicializa o banco de dados e cria as tabelas se não existirem.
             var databaseContext = new DatabaseContext();
             Console.WriteLine("Banco de dados inicializado com sucesso!");
 
             bool sendoUsado = true;
 
-            // Loop principal do menu do caixa eletrônico
+            // Loop principal do menu do caixa eletrônico.
             while (sendoUsado)
             {
                 Console.Clear();
@@ -69,7 +69,7 @@
 
                 string escolha = Console.ReadLine();
 
-                // Processa a escolha do usuário
+                // Processa a escolha do usuário.
                 switch (escolha)
                 {
                     case "1":
@@ -106,7 +106,7 @@
         }
 
         /// <summary>
-        /// Cria uma nova conta solicitando o nome do titular ao usuário
+        /// Cria uma nova conta solicitando o nome do titular ao usuário.
         /// </summary>
         static void CriarConta()
         {
@@ -135,7 +135,7 @@
         }
 
         /// <summary>
-        /// Consulta o saldo de uma conta existente
+        /// Consulta o saldo de uma conta existente.
         /// </summary>
         static void ConsultarSaldo()
         {
@@ -154,7 +154,7 @@
         }
 
         /// <summary>
-        /// Realiza um depósito em uma conta existente
+        /// Realiza um depósito em uma conta existente.
         /// </summary>
         static void Depositar()
         {
@@ -190,7 +190,7 @@
         }
 
         /// <summary>
-        /// Realiza um saque em uma conta existente
+        /// Realiza um saque em uma conta existente.
         /// </summary>
         static void Sacar()
         {
@@ -226,18 +226,18 @@
         }
 
         /// <summary>
-        /// Realiza transferência entre duas contas existentes
+        /// Realiza transferência entre duas contas existentes.
         /// </summary>
         static void Transferir()
         {
             Console.Clear();
             Console.WriteLine("--- Transferência ---");
 
-            // Busca conta origem
+            // Busca conta origem.
             var contaOrigem = BuscarContaComValidacao("Digite o número da conta de origem: ");
             if (contaOrigem == null) return;
 
-            // Busca conta destino
+            // Busca conta destino.
             var contaDestino = BuscarContaComValidacao("Digite o número da conta de destino: ");
             if (contaDestino == null) return;
 
@@ -267,7 +267,7 @@
         }
 
         /// <summary>
-        /// Consulta o histórico de transações de uma conta existente
+        /// Consulta o histórico de transações de uma conta existente.
         /// </summary>
         static void ConsultarHistorico()
         {
@@ -315,7 +315,7 @@
         }
 
         /// <summary>
-        /// Lista todas as contas cadastradas no sistema
+        /// Lista todas as contas cadastradas no sistema em formato de tabela.
         /// </summary>
         static void ListarContas()
         {
