@@ -15,6 +15,37 @@
         private static readonly TransacaoRepository _transacaoRepository = new();
 
         /// <summary>
+        /// Método auxiliar para buscar uma conta pelo número com validação
+        /// </summary>
+        /// <param name="mensagem">Mensagem personalizada para exibir ao usuário</param>
+        /// <returns>Objeto Conta se encontrado, null caso contrário</returns>
+        private static Conta? BuscarContaComValidacao(string mensagem = "Digite o número da conta: ")
+        {
+            Console.Write(mensagem);
+
+            if (int.TryParse(Console.ReadLine(), out int numeroConta))
+            {
+                var conta = _contaRepository.BuscarContaPorNumero(numeroConta);
+                if (conta != null)
+                {
+                    return conta;
+                }
+                else
+                {
+                    Console.WriteLine("Conta não encontrada!");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Número de conta inválido!");
+            }
+
+            Console.WriteLine("Pressione qualquer tecla para continuar...");
+            Console.ReadKey();
+            return null;
+        }
+
+        /// <summary>
         /// Método principal que inicia o programa.
         /// </summary>
         static void Main()
@@ -121,29 +152,13 @@
         {
             Console.Clear();
             Console.WriteLine("--- Consulta de Saldo ---");
-            Console.Write("Digite o número da conta: ");
 
-            //Valida e converte o número da conta.
-            if (int.TryParse(Console.ReadLine(), out int numeroConta))
-            {
-                var conta = _contaRepository.BuscarContaPorNumero(numeroConta);
+            var conta = BuscarContaComValidacao();
+            if (conta == null) return;
 
-                if (conta != null)
-                {
-                    // Exibe as informações da conta.
-                    Console.WriteLine($"\nConta: {conta.NumeroDaConta}");
-                    Console.WriteLine($"Titular: {conta.TitularDaConta}");
-                    Console.WriteLine($"Saldo: R$ {conta.SaldoDaConta:0.00}");
-                }
-                else
-                {
-                    Console.WriteLine("Conta não encontrada!");
-                }
-            }
-            else
-            {
-                Console.WriteLine("Número de conta inválido!");
-            }
+            Console.WriteLine($"\nConta: {conta.NumeroDaConta}");
+            Console.WriteLine($"Titular: {conta.TitularDaConta}");
+            Console.WriteLine($"Saldo: R$ {conta.SaldoDaConta:0.00}");
 
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu inicial.");
             Console.ReadKey();
@@ -156,38 +171,23 @@
         {
             Console.Clear();
             Console.WriteLine("--- Depósito ---");
-            Console.Write("Digite o número da conta: ");
 
-            if (int.TryParse(Console.ReadLine(), out int numeroConta))
+            var conta = BuscarContaComValidacao();
+            if (conta == null) return;
+
+            Console.Write("Digite o valor do depósito: ");
+            if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
             {
-                var conta = _contaRepository.BuscarContaPorNumero(numeroConta);
-                if (conta != null)
-                {
-                    Console.Write("Digite o valor do depósito: ");
-                    // Valida e converte o valor do depósito.
-                    if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
-                    {
-                        // Atualiza o saldo da conta e registra a transação para o histórico.
-                        decimal novoSaldo = conta.SaldoDaConta + valor;
-                        _contaRepository.AtualizarSaldo(numeroConta, novoSaldo);
-                        _transacaoRepository.RegistrarTransacao("DEPOSITO", valor, contaOrigem: null, contaDestino: numeroConta);
+                decimal novoSaldo = conta.SaldoDaConta + valor;
+                _contaRepository.AtualizarSaldo(conta.NumeroDaConta, novoSaldo);
+                _transacaoRepository.RegistrarTransacao("DEPOSITO", valor, contaOrigem: null, contaDestino: conta.NumeroDaConta);
 
-                        Console.WriteLine($"Depósito de R$ {valor:0.00} realizado com sucesso!");
-                        Console.WriteLine($"Novo saldo: R$ {novoSaldo:0.00}");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Valor inválido!");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Conta não encontrada!");
-                }
+                Console.WriteLine($"Depósito de R$ {valor:0.00} realizado com sucesso!");
+                Console.WriteLine($"Novo saldo: R$ {novoSaldo:0.00}");
             }
             else
             {
-                Console.WriteLine("Número de conta inválido!");
+                Console.WriteLine("Valor inválido!");
             }
 
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu inicial.");
@@ -201,44 +201,30 @@
         {
             Console.Clear();
             Console.WriteLine("--- Saque ---");
-            Console.Write("Digite o número da conta: ");
 
-            if (int.TryParse(Console.ReadLine(), out int numeroConta))
+            var conta = BuscarContaComValidacao();
+            if (conta == null) return;
+
+            Console.Write("Digite o valor do saque: ");
+            if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
             {
-                var conta = _contaRepository.BuscarContaPorNumero(numeroConta);
-                if (conta != null)
+                if (valor <= conta.SaldoDaConta)
                 {
-                    Console.Write("Digite o valor do saque: ");
-                    if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
-                    {
-                        // Verifica se há saldo suficiente para o saque.
-                        if (valor <= conta.SaldoDaConta)
-                        {
-                            decimal novoSaldo = conta.SaldoDaConta - valor;
-                            _contaRepository.AtualizarSaldo(numeroConta, novoSaldo);
-                            _transacaoRepository.RegistrarTransacao("SAQUE", valor, contaOrigem: numeroConta, contaDestino: null);
+                    decimal novoSaldo = conta.SaldoDaConta - valor;
+                    _contaRepository.AtualizarSaldo(conta.NumeroDaConta, novoSaldo);
+                    _transacaoRepository.RegistrarTransacao("SAQUE", valor, contaOrigem: conta.NumeroDaConta, contaDestino: null);
 
-                            Console.WriteLine($"Saque de R$ {valor:0.00} realizado com sucesso!");
-                            Console.WriteLine($"Novo saldo: R$ {novoSaldo:0.00}");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Saldo insuficiente!");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Valor inválido!");
-                    }
+                    Console.WriteLine($"Saque de R$ {valor:0.00} realizado com sucesso!");
+                    Console.WriteLine($"Novo saldo: R$ {novoSaldo:0.00}");
                 }
                 else
                 {
-                    Console.WriteLine("Conta não encontrada!");
+                    Console.WriteLine("Saldo insuficiente!");
                 }
             }
             else
             {
-                Console.WriteLine("Número de conta inválido!");
+                Console.WriteLine("Valor inválido!");
             }
 
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu inicial.");
@@ -252,67 +238,42 @@
         {
             Console.Clear();
             Console.WriteLine("--- Transferência ---");
-            Console.Write("Digite o número da conta de origem: ");
 
-            if (int.TryParse(Console.ReadLine(), out int contaOrigem))
+            // Busca conta origem
+            var contaOrigemObj = BuscarContaComValidacao("Digite o número da conta de origem: ");
+            if (contaOrigemObj == null) return;
+
+            // Busca conta destino
+            var contaDestinoObj = BuscarContaComValidacao("Digite o número da conta de destino: ");
+            if (contaDestinoObj == null) return;
+
+            Console.Write("Digite o valor da transferência: ");
+            if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
             {
-                var contaOrigemObj = _contaRepository.BuscarContaPorNumero(contaOrigem);
-                if (contaOrigemObj != null)
+                if (valor <= contaOrigemObj.SaldoDaConta)
                 {
-                    Console.Write("Digite o número da conta de destino: ");
-                    if (int.TryParse(Console.ReadLine(), out int contaDestino))
-                    {
-                        // Verifica se a conta destino existe.
-                        if (_contaRepository.ContaExiste(contaDestino))
-                        {
-                            Console.Write("Digite o valor da transferência: ");
-                            if (decimal.TryParse(Console.ReadLine(), out decimal valor) && valor > 0)
-                            {
-                                if (valor <= contaOrigemObj.SaldoDaConta)
-                                {
-                                    // Debita da conta origem.
-                                    decimal novoSaldoOrigem = contaOrigemObj.SaldoDaConta - valor;
-                                    _contaRepository.AtualizarSaldo(contaOrigem, novoSaldoOrigem);
+                    // Debita da conta origem
+                    decimal novoSaldoOrigem = contaOrigemObj.SaldoDaConta - valor;
+                    _contaRepository.AtualizarSaldo(contaOrigemObj.NumeroDaConta, novoSaldoOrigem);
 
-                                    // Credita na conta destino.
-                                    var contaDestinoObj = _contaRepository.BuscarContaPorNumero(contaDestino);
-                                    decimal novoSaldoDestino = contaDestinoObj.SaldoDaConta + valor;
-                                    _contaRepository.AtualizarSaldo(contaDestino, novoSaldoDestino);
+                    // Credita na conta destino
+                    decimal novoSaldoDestino = contaDestinoObj.SaldoDaConta + valor;
+                    _contaRepository.AtualizarSaldo(contaDestinoObj.NumeroDaConta, novoSaldoDestino);
 
-                                    // Registra a transação para o histórico.
-                                    _transacaoRepository.RegistrarTransacao("TRANSFERENCIA", valor, contaOrigem, contaDestino);
+                    // Registra a transação
+                    _transacaoRepository.RegistrarTransacao("TRANSFERENCIA", valor, contaOrigemObj.NumeroDaConta, contaDestinoObj.NumeroDaConta);
 
-                                    Console.WriteLine($"Transferência de R$ {valor:0.00} realizada com sucesso!");
-                                    Console.WriteLine($"Novo saldo da conta {contaOrigem}: R$ {novoSaldoOrigem:0.00}");
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Saldo insuficiente!");
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("Valor inválido!");
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Conta destino não encontrada!");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Número da conta destino inválido!");
-                    }
+                    Console.WriteLine($"Transferência de R$ {valor:0.00} realizada com sucesso!");
+                    Console.WriteLine($"Novo saldo da conta {contaOrigemObj.NumeroDaConta}: R$ {novoSaldoOrigem:0.00}");
                 }
                 else
                 {
-                    Console.WriteLine("Conta origem não encontrada!");
+                    Console.WriteLine("Saldo insuficiente!");
                 }
             }
             else
             {
-                Console.WriteLine("Número da conta origem inválido!");
+                Console.WriteLine("Valor inválido!");
             }
 
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu inicial.");
@@ -326,47 +287,34 @@
         {
             Console.Clear();
             Console.WriteLine("--- Histórico de Transações ---");
-            Console.Write("Digite o número da conta: ");
 
-            if (int.TryParse(Console.ReadLine(), out int numeroConta))
+            var conta = BuscarContaComValidacao();
+            if (conta == null) return;
+
+            var transacoes = _transacaoRepository.BuscarTransacoesPorConta(conta.NumeroDaConta);
+
+            Console.WriteLine($"\nHistórico da Conta {conta.NumeroDaConta}:");
+            Console.WriteLine("Data/Hora | Tipo | Valor | Conta Relacionada");
+            Console.WriteLine(new string('-', 50));
+
+            foreach (var transacao in transacoes)
             {
-                if (_contaRepository.ContaExiste(numeroConta))
+                string contaRelacionada = transacao.Tipo switch
                 {
-                    var transacoes = _transacaoRepository.BuscarTransacoesPorConta(numeroConta);
+                    "DEPOSITO" => "Entrada",
+                    "SAQUE" => "Saída",
+                    "TRANSFERENCIA" => transacao.ContaOrigem == conta.NumeroDaConta ?
+                                      $"Para conta {transacao.ContaDestino}" :
+                                      $"Da conta {transacao.ContaOrigem}",
+                    _ => ""
+                };
 
-                    Console.WriteLine($"\nHistórico da Conta {numeroConta}:");
-                    Console.WriteLine("Data/Hora | Tipo | Valor | Conta Relacionada");
-                    Console.WriteLine(new string('-', 50));
-
-                    // Exibe cada transação com detalhes.
-                    foreach (var transacao in transacoes)
-                    {
-                        string contaRelacionada = transacao.Tipo switch
-                        {
-                            "DEPOSITO" => "Entrada",
-                            "SAQUE" => "Saída",
-                            "TRANSFERENCIA" => transacao.ContaOrigem == numeroConta ?
-                                              $"Para conta {transacao.ContaDestino}" :
-                                              $"Da conta {transacao.ContaOrigem}",
-                            _ => ""
-                        };
-
-                        Console.WriteLine($"{transacao.DataHora:dd/MM/yy HH:mm} | {transacao.Tipo} | R$ {transacao.Valor:0.00} | {contaRelacionada}");
-                    }
-
-                    if (transacoes.Count == 0)
-                    {
-                        Console.WriteLine("Nenhuma transação encontrada.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Conta não encontrada!");
-                }
+                Console.WriteLine($"{transacao.DataHora:dd/MM/yy HH:mm} | {transacao.Tipo} | R$ {transacao.Valor:0.00} | {contaRelacionada}");
             }
-            else
+
+            if (transacoes.Count == 0)
             {
-                Console.WriteLine("Número de conta inválido!");
+                Console.WriteLine("Nenhuma transação encontrada.");
             }
 
             Console.WriteLine("Pressione qualquer tecla para voltar ao menu inicial.");
